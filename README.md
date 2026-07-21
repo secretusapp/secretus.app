@@ -67,6 +67,7 @@ Annual billing gets you **2 months free**. Details: [secretus.app/offer](https:/
 - [Secretus vs. OneTimeSecret](https://secretus.app/vs/onetimesecret)
 - [Secretus vs. Yopass](https://secretus.app/vs/yopass)
 - [Secretus vs. 1Password sharing](https://secretus.app/vs/1password)
+- [Secretus vs. Bitwarden Send](https://secretus.app/vs/bitwarden-send)
 
 ## 📚 Learn more
 
