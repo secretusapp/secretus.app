@@ -1,351 +1,80 @@
-# secretus.app
-# Secretus - Signal Protocol Encrypted Secret Sharing
+# Secretus — Share Secrets That Disappear 🔒
 
-Secretus is a peer-to-peer secret sharing platform that uses **Signal Protocol encryption**—the same encryption technology used by Signal. All encryption happens entirely in your browser using the Web Crypto API, ensuring zero-knowledge architecture and maximum privacy.
+**Send passwords, API keys, and confidential files as end-to-end encrypted, one-time links that self-destruct after they're opened.**
 
-## 🔒 Security Features
+[secretus.app](https://secretus.app) · [Plans & pricing](https://secretus.app/offer) · [Blog](https://secretus.app/blog) · [Security glossary](https://secretus.app/dex) · [Status](https://secretus.app/status)
 
-- **Signal Protocol Encryption**: Industry-proven end-to-end encryption with X3DH key agreement and Double Ratchet algorithm
-- **Zero-Knowledge Architecture**: We never have access to your encryption keys
-- **One-Time Viewing**: Secrets self-destruct after being viewed once
-- **No Server Storage**: Secrets are never stored on our servers
-- **Browser-Only Encryption**: All cryptographic operations happen in your browser
-- **Forward Secrecy**: Compromising one message doesn't compromise others
-- **Post-Compromise Security**: The protocol automatically recovers from key compromises
+Secretus is a zero-knowledge secret-sharing platform operated from the EU. Every secret is encrypted **in your browser** before anything leaves your device — our servers never receive plaintext secrets or decryption keys. Not at upload, not in transit, not ever.
 
-## 🏗️ Architecture Overview
+Stop pasting credentials into Slack, email, and ticket threads. Send a link that works once, then vanishes.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Secretus Architecture                    │
-└─────────────────────────────────────────────────────────────────┘
+## ✨ Why people use Secretus
 
-┌──────────────┐                    ┌──────────────┐
-│   Sender     │                    │   Receiver   │
-│  (Browser)   │                    │  (Browser)   │
-└──────┬───────┘                    └────-──┬──────┘
-       │                                    │
-       │  1. Generate Signal Protocol Keys  │
-       │     - Identity Key (ECDH + ECDSA)  │
-       │     - Signed Prekey                │
-       │     - One-Time Prekey              │
-       │                                    │
-       │  2. Exchange Prekey Bundles        │
-       │     via Signaling Server           │
-       │                                    │
-       ├────────────────────────────────────┤
-       │                                    │
-       │  3. X3DH Key Agreement             │
-       │     - Derive Shared Secret         │
-       │                                    │
-       │  4. Initialize Signal Session      │
-       │     - Double Ratchet Setup         │
-       │     - Chain Keys Derivation        │
-       │                                    │
-       │  5. WebRTC Connection              │
-       │     - Direct P2P Channel           │
-       │                                    │
-       │  6. Encrypt & Send Secret          │
-       │     - AES-256-GCM Encryption       │
-       │     - Message Key Derivation       │
-       │                                    │
-       │  7. Receive & Decrypt Secret       │
-       │     - Decrypt with Message Key     │
-       │                                    │
-       │  8. Mark Session as Complete       │
-       │     - Invalidate Session           │
-       │                                    │
-       └────────────────────────────────────┘
-                    │
-                    ▼
-         ┌──────────────────────┐
-         │  Signaling Server    │
-         │  (api.secretus.app)  │
-         │                      │
-         │  - Relay Prekey      │
-         │    Bundles           │
-         │  - WebRTC Signaling  │
-         │  - Session Tracking  │
-         └──────────────────────┘
-```
+- 🔥 **One-time viewing** — the link is invalidated the moment it's opened
+- 🕑 **Expiry you control** — from 15 minutes to 30 days, or a specific date
+- 🛡️ **Zero-knowledge by design** — encryption and decryption happen only in the browser, using the browser's native Web Crypto
+- 🔬 **Post-quantum component** — ML-KEM-768 (NIST FIPS 203) hybrid key agreement in live P2P transfers, designed to reduce harvest-now-decrypt-later exposure
+- 🇪🇺 **EU-operated, GDPR-first** — EU infrastructure, consent-gated analytics, transparent [provider register](https://secretus.app/subprocessors)
+- 📬 **Both directions** — send secrets, or request that someone sends one securely to you
 
-## 🔐 Signal Protocol Implementation
+## Three ways to share, for three threat models
 
-### X3DH Key Agreement Flow
+### ⚡ Standard Mode — send now, they open anytime
+An encrypted one-time link (AES-256-GCM). The decryption key travels only inside the link itself — in the URL fragment, which browsers never send to servers — so what our servers hold is ciphertext they cannot read. Opened once, the link dies and the ciphertext is deleted shortly after.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    X3DH Key Agreement Process                   │
-└─────────────────────────────────────────────────────────────────┘
+### 🔒 Maximum Security — live browser-to-browser transfer
+For your most sensitive material: a direct peer-to-peer session between sender and recipient, secured by an authenticated X3DH-style handshake — the session-setup pattern popularized by modern secure messengers — combined with ML-KEM-768 hybrid key agreement and per-message key ratcheting. A human-verifiable safety number confirms you're talking to the right person. In this mode, the secret payload is never stored on our servers.
 
-Sender (Initiator)                    Receiver (Responder)
-──────────────────                    ──────────────────
+### 🔑 Team Split — no single person can open it
+Splits a secret into N shares using Shamir's Secret Sharing. Any K holders together can reconstruct it; fewer than K learn *mathematically nothing* — that's information-theoretic security, independent of computing power. Perfect for root credentials, recovery codes, and anything that should require more than one pair of hands.
 
-1. Generate Keys:                     1. Generate Keys:
-   - Identity Key (IK_A)                  - Identity Key (IK_B)
-   - Signed Prekey (SPK_B)                - Signed Prekey (SPK_B)
-   - One-Time Prekey (OPK_B)              - One-Time Prekey (OPK_B)
+## 🧰 Built for real work
 
-2. Send Prekey Bundle                 2. Send Prekey Bundle
-   to Signaling Server                    to Signaling Server
+- **Labels & delivery confirmation** — know the moment a secret is opened
+- **Instant revocation** — kill an unopened link at any time
+- **Secret request links** — ask a client or colleague to send *you* a secret; only you can decrypt it
+- **Structured templates** — SSH keys, database credentials, API keys, Wi-Fi
+- **Audit log** — searchable history with JSON/CSV export, plus a one-click **Compliance PDF** (evidence for SOC 2, GDPR Art. 30, DORA)
+- **Teams** — share a Business plan with up to 5 members via single-use invite links
+- **REST API** — automate secret delivery from your own tooling
+- **2FA (TOTP), installable PWA, QR sharing, dark mode**
 
-3. Receive Receiver's Bundle           3. Receive Sender's Bundle
+## 🧩 Browser extension
 
-4. Perform X3DH:                      4. Perform X3DH:
-   DH1 = ECDH(IK_A, SPK_B)              DH1 = ECDH(SPK_B, IK_A)
-   DH2 = ECDH(SPK_A, IK_B)              DH2 = ECDH(IK_B, SPK_A)
-   DH3 = ECDH(SPK_A, SPK_B)             DH3 = ECDH(SPK_B, SPK_A)
-   DH4 = ECDH(SPK_A, OPK_B)             DH4 = ECDH(OPK_B, SPK_A)
+Share a one-time secret from any page — select text, right-click, done. Same zero-knowledge encryption as the web app; the decryption key never leaves your device. Rolling out for Firefox and Chrome.
 
-5. Combine: DH1 || DH2 || DH3 || DH4   5. Combine: DH1 || DH2 || DH3 || DH4
+## 🔐 What we never store
 
-6. Derive Shared Secret:              6. Derive Shared Secret:
-   HKDF(DH_combined, salt, info)         HKDF(DH_combined, salt, info)
-   → Shared Secret (32 bytes)             → Shared Secret (32 bytes)
-```
+- ❌ Plaintext secrets — encryption happens before upload
+- ❌ Decryption keys — they exist only in the links you share
+- ❌ P2P payloads — live transfers are never written to our servers
+- ✅ Standard mode stores ciphertext only — unreadable to us, deleted after first view or expiry
 
-### Double Ratchet Algorithm
+## 💳 Plans
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Double Ratchet Algorithm                     │
-└─────────────────────────────────────────────────────────────────┘
+Every plan starts with a **14-day full-access free trial — no credit card required**.
 
-Initial Setup:
-─────────────
-Shared Secret (from X3DH)
-    │
-    ├─→ Derive Root Key (HKDF)
-    │
-    ├─→ Derive Sending Chain Key (HKDF with "SendingChainKey" info)
-    │   └─→ Sender uses this to encrypt
-    │
-    └─→ Derive Receiving Chain Key (HKDF with "ReceivingChainKey" info)
-        └─→ Receiver uses this to decrypt
+| Plan | For | Price |
+|---|---|---|
+| **Starter** | Async one-time links for individuals | €9/mo |
+| **Pro** | Adds live P2P transfers with the post-quantum component | €19/mo |
+| **Business** | Files & voice, Team Split, Teams, API, Compliance PDF | €33/mo |
 
-Message Encryption (Sender):
-────────────────────────────
-Sending Chain Key
-    │
-    ├─→ Derive Message Key (HKDF with "MessageKey-{number}")
-    │   └─→ AES-256-GCM Encryption Key
-    │
-    ├─→ Encrypt Plaintext
-    │   └─→ Ciphertext + IV + Auth Tag
-    │
-    └─→ Update Chain Key (Ratchet Forward)
-        └─→ Increment Message Number
+Annual billing gets you **2 months free**. Details: [secretus.app/offer](https://secretus.app/offer)
 
-Message Decryption (Receiver):
-──────────────────────────────
-Receiving Chain Key
-    │
-    ├─→ Derive Message Key (HKDF with "MessageKey-{number}")
-    │   └─→ AES-256-GCM Decryption Key
-    │
-    ├─→ Decrypt Ciphertext
-    │   └─→ Plaintext
-    │
-    └─→ Update Chain Key (Ratchet Forward)
-        └─→ Increment Message Number
+## 🆚 How it compares
 
-Security Properties:
-────────────────────
-✓ Forward Secrecy: Each message uses a unique key
-✓ Post-Compromise Security: Chain keys update automatically
-✓ Perfect Forward Secrecy: Compromising one key doesn't affect others
-```
+- [Secretus vs. OneTimeSecret](https://secretus.app/vs/onetimesecret)
+- [Secretus vs. Yopass](https://secretus.app/vs/yopass)
+- [Secretus vs. 1Password sharing](https://secretus.app/vs/1password)
 
-## 📡 Complete Secret Sharing Flow
+## 📚 Learn more
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│              End-to-End Secret Sharing Flow                     │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│   Sender    │         │   Signaling  │         │  Receiver   │
-│             │         │    Server    │         │             │
-└──────┬──────┘         └──────┬───────┘         └──────┬──────┘
-       │                       │                        │
-       │ 1. Generate Keys      │                        │
-       │    (Signal Protocol)  │                        │
-       │                       │                        │
-       │ 2. Join Session       │                        │
-       ├──────────────────────>│                        │
-       │                       │                        │
-       │ 3. Send Prekey Bundle │                        │
-       ├──────────────────────>│                        │
-       │                       │                        │
-       │                       │ 4. Join Session        │
-       │                       │<───────────────────────┤
-       │                       │                        │
-       │                       │ 5. Send Prekey Bundle  │
-       │                       │<───────────────────────┤
-       │                       │                        │
-       │ 6. Receive Bundle     │                        │
-       │<──────────────────────┤                        │
-       │                       │ 7. Receive Bundle      │
-       │                       ├───────────────────────>│
-       │                       │                        │
-       │ 8. X3DH Key Agreement │                        │
-       │    (Local)            │                        │
-       │                       │ 9. X3DH Key Agreement  │
-       │                       │    (Local)             │
-       │                       │                        │
-       │ 10. Initialize Session│                        │
-       │     (Double Ratchet)  │                        │
-       │                       │ 11. Initialize Session │
-       │                       │     (Double Ratchet)   │
-       │                       │                        │
-       │ 12. WebRTC Offer      │                        │
-       ├──────────────────────>│                        │
-       │                       │ 13. Relay Offer        │
-       │                       ├───────────────────────>│
-       │                       │                        │
-       │                       │ 14. WebRTC Answer      │
-       │                       │<───────────────────────┤
-       │ 15. Relay Answer      │                        │
-       │<──────────────────────┤                        │
-       │                       │                        │
-       │ 16. ICE Candidates    │                        │
-       │<══════════════════════╪═══════════════════════>│
-       │                       │                        │
-       │ 17. P2P Connection    │                        │
-       │<══════════════════════╪═══════════════════════>│
-       │    Established        │                        │
-       │                       │                        │
-       │ 18. Encrypt Secret    │                        │
-       │     (Signal Protocol) │                        │
-       │                       │                        │
-       │ 19. Send Encrypted    │                        │
-       │     Secret (P2P)      │                        │
-       │══════════════════════>│                        │
-       │                       │                        │
-       │                       │ 20. Receive Encrypted  │
-       │                       │     Secret             │
-       │                       │                        │
-       │                       │ 21. Decrypt Secret     │
-       │                       │     (Signal Protocol)  │
-       │                       │                        │
-       │                       │ 22. Mark Complete      │
-       │                       │<───────────────────────┤
-       │                       │                        │
-       │                       │ 23. Invalidate Session │
-       │                       │     (Server-side)      │
-       │                       │                        │
-       └───────────────────────┴────────────────────────┘
-```
-
-## 🔑 Key Components
-
-### 1. Signal Protocol
-
-Implements the core Signal Protocol functionality:
-
-- **Key Generation**:
-  -  Creates ECDH and ECDSA key pairs for identity
-  -  Creates signed prekey with ECDSA signature
-  -  Creates one-time prekey for X3DH
-
-- **X3DH Key Agreement**:
-  - Performs Extended Triple Diffie-Hellman key agreement
-  - Derives shared secret from 4 DH operations
-  - Handles both sender (initiator) and receiver (responder) roles
-
-- **Double Ratchet**:
-  -  Sets up Signal Protocol session with chain keys
-  -  Encrypts messages using message keys derived from chain keys
-  -  Decrypts messages using the same key derivation
-
-### 2. WebRTC Connection
-
-Handles peer-to-peer data channel:
-
-- Creates RTCPeerConnection with STUN/TURN servers
-- Manages data channel for encrypted secret transmission
-- Handles connection state and retry logic
-
-### 3. Signaling Server
-
-WebSocket server for session coordination:
-
-- Relays prekey bundles between sender and receiver
-- Facilitates WebRTC signaling (offers, answers, ICE candidates)
-- Tracks session state and invalidates completed sessions
-- Prevents reuse of already-viewed secrets
-
-### 4. Frontend Components
-
-- **SecretShareForm** :
-  - Sender interface for creating and sending secrets
-  - Handles file and voice message encryption
-  - Manages Signal Protocol session as sender
-
-- **SecretReceiveForm** :
-  - Receiver interface for viewing secrets
-  - Handles decryption and file downloads
-  - Manages Signal Protocol session as receiver
-  - Sends completion status to invalidate session
-
-## 🛡️ Security Guarantees
-
-### What We Protect Against
-
-1. **Man-in-the-Middle Attacks**: X3DH ensures authenticated key exchange
-2. **Replay Attacks**: Message numbers and unique IVs prevent replay
-3. **Forward Secrecy**: Each message uses a unique key derived from chain keys
-4. **Post-Compromise Security**: Chain keys ratchet forward automatically
-5. **Server Compromise**: Server never sees encryption keys or plaintext
-6. **Session Reuse**: Completed sessions are invalidated server-side
-
-### What We Don't Store
-
-- ❌ Encryption keys (Identity, Prekeys, Chain Keys)
-- ❌ Shared secrets
-- ❌ Plaintext secrets
-- ❌ Message keys
-- ✅ Only session metadata logs (sessionId, timestamps, completion status)
-
-## 🚀 Getting Started
-
-- Modern browser with Web Crypto API support
-
-## 📊 Technical Details
-
-### Cryptographic Algorithms
-
-- **Key Exchange**: X3DH (Extended Triple Diffie-Hellman)
-- **Key Derivation**: HKDF-SHA-256
-- **Symmetric Encryption**: AES-256-GCM
-- **Digital Signatures**: ECDSA P-256
-- **Elliptic Curve**: P-256 (secp256r1)
-
-### Key Sizes
-
-- Identity Keys: 65 bytes (uncompressed EC public key)
-- Shared Secret: 32 bytes (256 bits)
-- Chain Keys: 32 bytes (256 bits)
-- Message Keys: 32 bytes (256 bits)
-- AES-GCM IV: 12 bytes (96 bits)
-- AES-GCM Auth Tag: 16 bytes (128 bits)
-
-### Session Lifecycle
-
-1. **Creation**: Session created when sender generates sessionId
-2. **Key Exchange**: Prekey bundles exchanged via signaling server
-3. **Establishment**: X3DH and Double Ratchet setup
-4. **Active**: WebRTC connection established, secret transmitted
-5. **Completion**: Secret decrypted, session marked complete
-6. **Invalidation**: Session added to blacklist, cannot be reused
-
-
-## 🙏 Acknowledgments
-
-- Signal Protocol specification
-- Web Crypto API for browser-native cryptography
-- WebRTC for peer-to-peer communication
+- [Blog — breach analysis & practical secret-sharing guides](https://secretus.app/blog)
+- [Security glossary (/dex)](https://secretus.app/dex)
+- [Medium](https://medium.com/@secretusapp)
+- [Privacy](https://secretus.app/privacy) · [Terms](https://secretus.app/terms) · [Sub-processors](https://secretus.app/subprocessors)
 
 ---
 
-**Built with Signal Protocol encryption** 🔒
+**Encrypted in your browser. Opened once. Gone forever.** 🔒
